@@ -29,7 +29,6 @@ async def get_menu_by_id(menu_id: int, session: AsyncSession):
         menu = first.Menu
         return menu
     except SQLAlchemyError as ex:
-        print(ex)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad request")
 
 

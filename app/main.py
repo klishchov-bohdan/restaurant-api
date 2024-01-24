@@ -1,8 +1,6 @@
 import asyncio
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from app.database import engine
 from app.services import menu_router, submenu_router, dish_router
 
 

@@ -11,7 +11,7 @@ class DishSchema(BaseModel):
     id: int
     title: str
     description: str
-    price: Decimal
+    price: Decimal = Field(ge=.01)
 
 
 class SubmenuSchema(BaseModel):
