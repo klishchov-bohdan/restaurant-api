@@ -9,7 +9,7 @@ from app.schemas import DishSchema
 class CreateDishSchema(BaseModel):
     title: Annotated[str, Form()] = Field(default=None)
     description: Annotated[str, Form()] = Field(default=None)
-    price: Annotated[Decimal, Form()] = Field(default=None)
+    price: Annotated[Decimal, Form()] = Field(default=None, ge=.01)
 
 
 class OutDishSchema(DishSchema):

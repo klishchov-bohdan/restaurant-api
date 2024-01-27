@@ -1,5 +1,3 @@
-from typing import Mapping
-
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 

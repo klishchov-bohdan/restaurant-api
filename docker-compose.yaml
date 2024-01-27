@@ -5,6 +5,8 @@ services:
     image: postgres:alpine
     container_name: restaurant
     command: -p 1221
+    ports:
+      - "1221:1221"
     expose:
       - 1221
     env_file:
@@ -13,6 +15,12 @@ services:
       - db-postgres:/var/lib/postgresql/data
     networks:
       - my-net
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}", "-p", "1221"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   app:
     build:
       context: .
@@ -21,12 +29,13 @@ services:
     container_name: api
     command: bash -c "alembic upgrade head && gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind=0.0.0.0:8000"
     ports:
-      - 8000:8000
+      - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: on-failure
     volumes:
-      - ./app:/home/app
+      - ./app:/home/restaurant/app
     networks:
       - my-net
 
@@ -34,8 +43,6 @@ volumes:
   db-postgres:
     driver: local
 
-  cache:
-    driver: local
 
 networks:
   my-net:

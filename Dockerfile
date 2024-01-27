@@ -4,9 +4,10 @@ RUN mkdir /restaurant
 
 WORKDIR restaurant
 
-COPY . .
+COPY ./requirements.txt .
+RUN pip install --upgrade pip && pip install -r requirements.txt --no-cache-dir
 
-RUN pip install -r requirements.txt
+COPY . .
 
 RUN mv .env.prod .env
 #RUN chmod a+x docker/*.sh

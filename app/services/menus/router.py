@@ -27,8 +27,7 @@ async def get_all_menus(session: AsyncSession = Depends(get_async_session)):
             response_model=OutMenuSchema,
             status_code=status.HTTP_200_OK,
             description='Returning the Menu by the id',
-            summary='Get menu by id'
-            )
+            summary='Get menu by id')
 async def get_menu(menu: Menu = Depends(valid_menu_id)):
     return OutMenuSchema.model_validate(menu)
 
@@ -37,8 +36,7 @@ async def get_menu(menu: Menu = Depends(valid_menu_id)):
              response_model=OutMenuSchema,
              status_code=status.HTTP_201_CREATED,
              description='Create and return new Menu',
-             summary='Create new Menu'
-             )
+             summary='Create new Menu')
 async def create(menu: CreateMenuSchema, session: AsyncSession = Depends(get_async_session)):
     created_menu = await create_menu(title=menu.title, description=menu.description, session=session)
     return OutMenuSchema.model_validate(created_menu)
@@ -48,8 +46,7 @@ async def create(menu: CreateMenuSchema, session: AsyncSession = Depends(get_asy
               response_model=OutMenuSchema,
               status_code=status.HTTP_200_OK,
               description='Update and return Menu',
-              summary='Update Menu'
-              )
+              summary='Update Menu')
 async def update(new_menu: CreateMenuSchema, menu: Menu = Depends(valid_menu_id), session: AsyncSession = Depends(get_async_session)):
     updated_menu = await update_menu(menu_id=menu.id, title=new_menu.title, description=new_menu.description, session=session)
     return OutMenuSchema.model_validate(updated_menu)
@@ -58,8 +55,7 @@ async def update(new_menu: CreateMenuSchema, menu: Menu = Depends(valid_menu_id)
 @router.delete("/{menu_id}",
                status_code=status.HTTP_200_OK,
                description='Delete Menu by id',
-               summary='Delete Menu by id'
-               )
+               summary='Delete Menu by id')
 async def delete(menu: Menu = Depends(valid_menu_id), session: AsyncSession = Depends(get_async_session)):
     await delete_menu(menu_id=menu.id, session=session)
 
