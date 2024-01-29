@@ -1,6 +1,6 @@
 from typing import Final, AsyncGenerator
 
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, NullPool
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine, async_sessionmaker, AsyncSession, AsyncAttrs
 from sqlalchemy.orm import declarative_base
 
@@ -9,7 +9,7 @@ from app.config import settings
 _SQLALCHEMY_DATABASE_URL: Final[str] = f'postgresql+asyncpg://{settings.postgres.user}:{settings.postgres.password}' \
                           f'@{settings.postgres.host}:{settings.postgres.port}/{settings.postgres.db}'
 
-engine: Final[AsyncEngine] = create_async_engine(_SQLALCHEMY_DATABASE_URL)
+engine: Final[AsyncEngine] = create_async_engine(_SQLALCHEMY_DATABASE_URL, poolclass=NullPool)
 async_session_maker: Final[async_sessionmaker[AsyncSession]] = async_sessionmaker(
     engine, expire_on_commit=False, autoflush=False, autocommit=False
 )

@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   db:
-    image: postgres:alpine
+    image: postgres:15.1-alpine
     container_name: restaurant
     command: -p 1221
     ports:
@@ -21,19 +21,53 @@ services:
       timeout: 5s
       retries: 5
 
+  db_test:
+    image: postgres:15.1-alpine
+    container_name: restaurant_test
+    command: -p 1222
+    ports:
+      - "1222:1222"
+    expose:
+      - 1222
+    env_file:
+      - .env.test
+    volumes:
+      - db-postgres-test:/var/lib/postgresql/data
+    networks:
+      - my-net
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}", "-p", "1222" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   app:
     build:
       context: .
     env_file:
       - .env.prod
     container_name: api
-    command: bash -c "alembic upgrade head && gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind=0.0.0.0:8000"
+    command: ["./docker/app.sh"]
     ports:
       - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
-    restart: on-failure
+    volumes:
+      - ./app:/home/restaurant/app
+    networks:
+      - my-net
+
+  app_tests:
+    build:
+      context: .
+    env_file:
+      - .env.test
+    container_name: api_tests
+    command: ["./docker/app_test.sh"]
+    depends_on:
+      db_test:
+        condition: service_healthy
     volumes:
       - ./app:/home/restaurant/app
     networks:
@@ -41,6 +75,8 @@ services:
 
 volumes:
   db-postgres:
+    driver: local
+  db-postgres-test:
     driver: local
 
 
