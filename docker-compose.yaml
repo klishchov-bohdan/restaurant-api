@@ -65,6 +65,8 @@ services:
       - .env.test
     container_name: api_tests
     command: ["./docker/app_test.sh"]
+#    ports:
+#      - "9999:8000"
     depends_on:
       db_test:
         condition: service_healthy
