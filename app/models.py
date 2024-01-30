@@ -35,12 +35,12 @@ class Submenu(Base):
     time_updated: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP"),
                                                    onupdate=text("CURRENT_TIMESTAMP"))
 
-    dishes_count: Mapped[int] = column_property(
-        select(func.count(Dish.id))
-        .where(Dish.submenu_id == id)
-        .correlate_except(Dish)
-        .scalar_subquery()
-    )
+    # dishes_count: Mapped[int] = column_property(
+    #     select(func.count(Dish.id))
+    #     .where(Dish.submenu_id == id)
+    #     .correlate_except(Dish)
+    #     .scalar_subquery()
+    # )
 
 
 class Menu(Base):
@@ -52,17 +52,17 @@ class Menu(Base):
     time_created: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
     time_updated: Mapped[datetime] = mapped_column(TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP"),
                                                    onupdate=text("CURRENT_TIMESTAMP"))
-    submenus_count: Mapped[int] = column_property(
-        select(func.count(Submenu.id))
-        .where(Submenu.menu_id == id)
-        .correlate_except(Submenu)
-        .scalar_subquery()
-    )
-
-    dishes_count: Mapped[int] = column_property(
-        select(func.count(Dish.id))
-        .select_from(outerjoin(Submenu, Dish, Submenu.id == Dish.submenu_id))
-        .where(Submenu.menu_id == id)
-        .correlate_except(Dish, Submenu)
-        .scalar_subquery()
-    )
+    # submenus_count: Mapped[int] = column_property(
+    #     select(func.count(Submenu.id))
+    #     .where(Submenu.menu_id == id)
+    #     .correlate_except(Submenu)
+    #     .scalar_subquery()
+    # )
+    #
+    # dishes_count: Mapped[int] = column_property(
+    #     select(func.count(Dish.id))
+    #     .select_from(outerjoin(Submenu, Dish, Submenu.id == Dish.submenu_id))
+    #     .where(Submenu.menu_id == id)
+    #     .correlate_except(Dish, Submenu)
+    #     .scalar_subquery()
+    # )

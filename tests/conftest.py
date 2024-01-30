@@ -51,3 +51,4 @@ async def prepare_database():
 async def ac() -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(app=app, base_url="http://test/api/v1") as async_client:
         yield async_client
+

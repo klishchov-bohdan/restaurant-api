@@ -1,14 +1,58 @@
 from httpx import AsyncClient
+from sqlalchemy import select
+
+from app.models import Menu, Submenu, Dish
+from tests.conftest import async_session_maker_test
 
 
 class TestDishesAndSubmenusCount:
-    menu_submenus_count = 1
-    menu_dishes_count = 3
-    submenu_dishes_count = 3
+    async def test_submenus_and_dishes_count(self, ac: AsyncClient):
+        # Create menu
+        response = await ac.post('/menus', follow_redirects=True,
+                                 json={
+                                     "title": "title1",
+                                     "description": "description1"
+                                 })
+        assert response.status_code == 201, 'Can`t create menu'
+        assert response.json()['title'], 'Response haven`t a field title'
+        assert response.json()['id'], 'Response haven`t a field id'
+        assert response.json()['description'], 'Response haven`t a field description'
+        query = (
+            select(Menu).where(Menu.id == int(response.json()['id']))
+        )
+        async with async_session_maker_test() as db:
+            result = await db.execute(query)
+            first = result.first()
+            menu = first.Menu
+        assert str(menu.id) == response.json()['id'], 'Menu id is not equal'
+        assert menu.title == response.json()['title'], 'Menu title is not equal'
+        assert menu.description == response.json()['description'], 'Menu description is not equal'
 
-    async def test_create_dishes(self, ac: AsyncClient):
-        for num in range(1, self.submenu_dishes_count + 1):
-            response = await ac.post('/menus/1/submenus/1/dishes', follow_redirects=True,
+        # Create submenu
+        response = await ac.post(f'/menus/{menu.id}/submenus', follow_redirects=True,
+                                 json={
+                                     "title": "title1",
+                                     "description": "description1"
+                                 })
+        assert response.status_code == 201, 'Can`t create submenu'
+        assert response.json()['title'], 'Response haven`t a field title'
+        assert response.json()['id'], 'Response haven`t a field id'
+        assert response.json()['description'], 'Response haven`t a field description'
+        query = (
+            select(Submenu).where(Submenu.id == int(response.json()['id']))
+        )
+        async with async_session_maker_test() as db:
+            result = await db.execute(query)
+            first = result.first()
+            assert first is not None, 'Can`t create submenu'
+            submenu = first.Submenu
+        assert str(submenu.id) == response.json()['id'], 'Submenu id is not equal'
+        assert submenu.title == response.json()['title'], 'Submenu title is not equal'
+        assert submenu.description == response.json()['description'], 'Submenu description is not equal'
+
+        # Create dishes
+        for num in range(1, 3):
+            response = await ac.post(f'/menus/{menu.id}/submenus/{submenu.id}/dishes', follow_redirects=True,
                                      json={
                                          "title": f"title{num}",
                                          "description": f"description{num}",
@@ -19,51 +63,66 @@ class TestDishesAndSubmenusCount:
             assert response.json()['id'], 'Response haven`t a field id'
             assert response.json()['description'], 'Response haven`t a field description'
             assert response.json()['price'], 'Response haven`t a field price'
+            query = (
+                select(Dish).where(Dish.id == int(response.json()['id']))
+            )
+            async with async_session_maker_test() as db:
+                result = await db.execute(query)
+                first = result.first()
+                assert first is not None, 'Can`t create dish'
+                dish = first.Dish
+            assert str(dish.id) == response.json()['id'], 'Dish id is not equal'
+            assert dish.title == response.json()['title'], 'Dish title is not equal'
+            assert dish.description == response.json()['description'], 'Dish description is not equal'
+            assert str(dish.price) == response.json()['price'], 'Dish title is not equal'
 
-    async def test_menu_count_check(self, ac: AsyncClient):
-        response = await ac.get(f'/menus/1', follow_redirects=True)
+        #Watch menu
+        response = await ac.get(f'/menus/{menu.id}', follow_redirects=True)
         assert response.status_code == 200, 'Can`t get menu by id'
-        assert response.json()['id'], 'Response haven`t a field id'
-        assert response.json()['id'] == '1', 'Invalid menu response'
-        assert response.json()['submenus_count'] == self.menu_submenus_count, 'Invalid submenus count in menu'
-        assert response.json()['dishes_count'] == self.menu_dishes_count, 'Invalid dishes count in menu'
+        assert str(menu.id) == response.json()['id'], 'Menu id is not equal'
+        assert menu.title == response.json()['title'], 'Menu title is not equal'
+        assert menu.description == response.json()['description'], 'Menu description is not equal'
+        assert response.json()['submenus_count'] == 1, 'Invalid submenus count'
+        assert response.json()['dishes_count'] == 2, 'Invalid dishes count'
 
-    async def test_submenu_count_check(self, ac: AsyncClient):
-        response = await ac.get(f'/menus/1/submenus/1', follow_redirects=True)
-        assert response.status_code == 200, 'Can`t get menu by id'
-        assert response.json()['id'], 'Response haven`t a field id'
-        assert response.json()['id'] == '1', 'Invalid menu response'
-        assert response.json()['dishes_count'] == self.submenu_dishes_count, 'Invalid dishes count in submenu'
+        # Watch submenu
+        response = await ac.get(f'/menus/1/submenus/{submenu.id}', follow_redirects=True)
+        assert response.status_code == 200, 'Can`t get submenu by id'
+        assert str(submenu.id) == response.json()['id'], 'Submenu id is not equal'
+        assert submenu.title == response.json()['title'], 'Submenu title is not equal'
+        assert submenu.description == response.json()['description'], 'Submenu description is not equal'
+        assert response.json()['dishes_count'] == 2, 'Invalid dishes count'
 
-    async def test_delete_submenu(self, ac: AsyncClient):
-        response = await ac.delete('/menus/1/submenus/1', follow_redirects=True)
+        # Delete submenu
+        response = await ac.delete(f'/menus/{menu.id}/submenus/{submenu.id}', follow_redirects=True)
         assert response.status_code == 200, 'Can`t delete submenu by id'
         assert not response.json(), 'Invalid response'
 
-    async def test_get_all_submenus(self, ac: AsyncClient):
-        response = await ac.get('/menus/1/submenus', follow_redirects=True)
+        # Watch submenus
+        response = await ac.get(f'/menus/{menu.id}/submenus', follow_redirects=True)
         assert response.status_code == 200, 'Can`t get all submenus'
-        assert response.text == '[]', 'Response is not empty list'
+        assert response.text[0] == '[' and response.text[-1] == ']', 'Response json is not a list'
 
-    async def test_get_all_dishes(self, ac: AsyncClient):
-        response = await ac.get('/menus/1/submenus/1/dishes', follow_redirects=True)
+        # Watch dishes
+        response = await ac.get(f'/menus/{menu.id}/submenus/{submenu.id}/dishes', follow_redirects=True)
         assert response.status_code == 200, 'Can`t get all dishes'
-        assert response.text == '[]', 'Response is not empty list'
+        assert response.text[0] == '[' and response.text[-1] == ']', 'Response json is not a list'
 
-    async def test_get_menu(self, ac: AsyncClient):
-        response = await ac.get('/menus/1', follow_redirects=True)
+        # Watch menu
+        response = await ac.get(f'/menus/{menu.id}', follow_redirects=True)
         assert response.status_code == 200, 'Can`t get menu by id'
-        assert response.json()['id'], 'Response haven`t a field id'
-        assert response.json()['id'] == '1', 'Invalid menu response'
-        assert response.json()['submenus_count'] == 0, 'Invalid submenus count in menu'
-        assert response.json()['dishes_count'] == 0, 'Invalid dishes count in menu'
+        assert str(menu.id) == response.json()['id'], 'Menu id is not equal'
+        assert menu.title == response.json()['title'], 'Menu title is not equal'
+        assert menu.description == response.json()['description'], 'Menu description is not equal'
+        assert response.json()['submenus_count'] == 0, 'Invalid submenus count'
+        assert response.json()['dishes_count'] == 0, 'Invalid dishes count'
 
-    async def test_delete_menu(self, ac: AsyncClient):
-        response = await ac.delete('/menus/1', follow_redirects=True)
+        # Delete menu
+        response = await ac.delete(f'/menus/{menu.id}', follow_redirects=True)
         assert response.status_code == 200, 'Can`t delete menu by id'
         assert not response.json(), 'Invalid response'
 
-    async def test_get_all_menus(self, ac: AsyncClient):
+        # Show menus
         response = await ac.get('/menus', follow_redirects=True)
         assert response.status_code == 200, 'Can`t get all menus'
-        assert response.text == '[]', 'Response is not empty list'
+        assert response.text[0] == '[' and response.text[-1] == ']', 'Response json is not a list'

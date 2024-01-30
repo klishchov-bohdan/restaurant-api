@@ -1,50 +1,61 @@
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
-from sqlalchemy import select, insert, update, delete
+from sqlalchemy import select, insert, update, delete, func, distinct
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import status, HTTPException
 
-from app.models import Menu
+from app.models import Menu, Submenu, Dish
 
 
-async def get_menus(session: AsyncSession) -> list[Menu]:
+async def get_menus(session: AsyncSession) -> list[dict[str, Any]]:
     try:
-        # ******************************************
-        # *                 RAW SQL                *
-        # ******************************************
-        # SELECT
-        #   (SELECT count(submenu.id) AS count_1
-        #     FROM submenu
-        #     WHERE submenu.menu_id = menu.id) AS submenus_count,
-        #   (SELECT count(dish.id) AS count_2
-        #     FROM submenu LEFT OUTER JOIN dish ON submenu.id = dish.submenu_id
-        #     WHERE submenu.menu_id = menu.id) AS dishes_count,
-        #   menu.id,
-        #   menu.title,
-        #   menu.description,
-        #   menu.time_created,
-        #   menu.time_updated
-        # FROM menu
-        stmt = select(Menu)  # submenus_count and dishes_count calculates like subqueries (show Menu model in app/models.py)
+        stmt = (
+            select(Menu,
+                   func.count(distinct(Submenu.id)).label('submenu_count'),
+                   func.count(distinct(Dish.id)).label('dish_count'))
+            .outerjoin(Submenu, Menu.id == Submenu.menu_id)
+            .outerjoin(Dish, Submenu.id == Dish.submenu_id)
+            .group_by(Menu.id)
+        )
         result = await session.execute(stmt)
-        return [menu[0] for menu in result.all()]
+        return [{
+            'id': menu[0].id,
+            'title': menu[0].title,
+            'description': menu[0].description,
+            'submenus': menu[0].submenus,
+            'submenus_count': menu[1],
+            'dishes_count': menu[2],
+        } for menu in result.all()]
     except SQLAlchemyError as ex:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad request")
 
 
-async def get_menu_by_id(menu_id: int, session: AsyncSession) -> Optional[Menu]:
+async def get_menu_by_id(menu_id: int, session: AsyncSession) -> dict[str, Any] | None:
     try:
         stmt = (
-            select(Menu).where(Menu.id == menu_id)
+            select(Menu,
+                   func.count(distinct(Submenu.id)).label('submenu_count'),
+                   func.count(distinct(Dish.id)).label('dish_count'))
+            .where(Menu.id == menu_id)
+            .outerjoin(Submenu, Menu.id == Submenu.menu_id)
+            .outerjoin(Dish, Submenu.id == Dish.submenu_id)
+            .group_by(Menu.id)
         )
         result = await session.execute(stmt)
-        first = result.first()
-        if first is None:
+        menu = result.first()
+        if menu is None:
             return
-        menu = first.Menu
-        return menu
+        return {
+            'id': menu[0].id,
+            'title': menu[0].title,
+            'description': menu[0].description,
+            'submenus': menu[0].submenus,
+            'submenus_count': menu[1],
+            'dishes_count': menu[2],
+        }
     except SQLAlchemyError as ex:
+        print(ex)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad request")
 
 

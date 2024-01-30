@@ -51,7 +51,7 @@ async def create(menu_id: int, submenu: CreateSubmenuSchema, session: AsyncSessi
               summary='Update Submenu')
 async def update(new_submenu: CreateSubmenuSchema, submenu: Submenu = Depends(valid_submenu_id),
                  session: AsyncSession = Depends(get_async_session)):
-    updated_submenu = await update_submenu(menu_id=submenu.menu_id, submenu_id=submenu.id, title=new_submenu.title,
+    updated_submenu = await update_submenu(menu_id=submenu['menu_id'], submenu_id=submenu['id'], title=new_submenu.title,
                                            description=new_submenu.description, session=session)
     return OutSubmenuSchema.model_validate(updated_submenu)
 
@@ -61,4 +61,4 @@ async def update(new_submenu: CreateSubmenuSchema, submenu: Submenu = Depends(va
                description='Delete Submenu by id',
                summary='Delete Submenu by id')
 async def delete(submenu: Submenu = Depends(valid_submenu_id), session: AsyncSession = Depends(get_async_session)):
-    await delete_submenu(menu_id=submenu.menu_id, submenu_id=submenu.id, session=session)
+    await delete_submenu(menu_id=submenu['menu_id'], submenu_id=submenu['id'], session=session)

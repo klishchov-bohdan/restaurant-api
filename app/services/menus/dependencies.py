@@ -1,3 +1,5 @@
+from typing import Dict, Any
+
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,7 +9,7 @@ from app.services.menus.exeptions import MenuNotFoundError
 from app.services.menus.service import get_menu_by_id
 
 
-async def valid_menu_id(menu_id: int, session: AsyncSession = Depends(get_async_session)) -> Menu:
+async def valid_menu_id(menu_id: int, session: AsyncSession = Depends(get_async_session)) -> dict[str, Any]:
     menu = await get_menu_by_id(menu_id=menu_id, session=session)
     if not menu:
         raise MenuNotFoundError()

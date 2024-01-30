@@ -48,7 +48,7 @@ async def create(menu: CreateMenuSchema, session: AsyncSession = Depends(get_asy
               description='Update and return Menu',
               summary='Update Menu')
 async def update(new_menu: CreateMenuSchema, menu: Menu = Depends(valid_menu_id), session: AsyncSession = Depends(get_async_session)):
-    updated_menu = await update_menu(menu_id=menu.id, title=new_menu.title, description=new_menu.description, session=session)
+    updated_menu = await update_menu(menu_id=menu['id'], title=new_menu.title, description=new_menu.description, session=session)
     return OutMenuSchema.model_validate(updated_menu)
 
 
@@ -57,5 +57,5 @@ async def update(new_menu: CreateMenuSchema, menu: Menu = Depends(valid_menu_id)
                description='Delete Menu by id',
                summary='Delete Menu by id')
 async def delete(menu: Menu = Depends(valid_menu_id), session: AsyncSession = Depends(get_async_session)):
-    await delete_menu(menu_id=menu.id, session=session)
+    await delete_menu(menu_id=menu['id'], session=session)
 
