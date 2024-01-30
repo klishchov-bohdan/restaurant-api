@@ -1,8 +1,6 @@
 #!/bin/bash
 
-
-pytest -v ./tests/test_count.py
-pytest -v ./tests/test_menu.py ./tests/test_submenu.py ./tests/test_dish.py
+pytest -v ./tests
 #rm .env
 #cp ./.env.test ./.env
 #alembic upgrade head

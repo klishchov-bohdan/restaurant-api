@@ -34,5 +34,5 @@ docker compose up --build app_tests
 After tests passed container finish to work automatically
 
 ## Database query
-Subqueries were used to obtain the number of dishes and submenus. They are defined in the app/models.py module in the main sqlalchemy Menu and Submenu models using column_property()
-Queries to the database to obtain the number of dishes and submenus are located in the corresponding service modules. They are marked with a comment with a raw Postgresql query
+Getting a list of menus or a specific menu is done using one complex orm request, which can be seen in the app/services/menus/service.py module
+-> [Go to file](https://github.com/klishchov-bohdan/restaurant-api/blob/master/app/services/menus/service.py)
