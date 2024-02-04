@@ -1,3 +1,4 @@
+from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy import select
 
@@ -6,9 +7,10 @@ from tests.conftest import async_session_maker_test
 
 
 class TestDishesAndSubmenusCount:
-    async def test_submenus_and_dishes_count(self, ac: AsyncClient):
+    async def test_submenus_and_dishes_count(self, ac: AsyncClient, api: FastAPI):
         # Create menu
-        response = await ac.post('/menus', follow_redirects=True,
+        req_url = api.url_path_for('create_menu')
+        response = await ac.post(req_url, follow_redirects=True,
                                  json={
                                      'title': 'title1',
                                      'description': 'description1'
@@ -29,7 +31,8 @@ class TestDishesAndSubmenusCount:
         assert menu.description == response.json()['description'], 'Menu description is not equal'
 
         # Create submenu
-        response = await ac.post(f'/menus/{menu.id}/submenus', follow_redirects=True,
+        req_url = api.url_path_for('create_submenu', menu_id=menu.id)
+        response = await ac.post(req_url, follow_redirects=True,
                                  json={
                                      'title': 'title1',
                                      'description': 'description1'
@@ -52,7 +55,8 @@ class TestDishesAndSubmenusCount:
 
         # Create dishes
         for num in range(1, 3):
-            response = await ac.post(f'/menus/{menu.id}/submenus/{submenu.id}/dishes', follow_redirects=True,
+            req_url = api.url_path_for('create_dish', menu_id=menu.id, submenu_id=submenu.id)
+            response = await ac.post(req_url, follow_redirects=True,
                                      json={
                                          'title': f'title{num}',
                                          'description': f'description{num}',
@@ -77,7 +81,8 @@ class TestDishesAndSubmenusCount:
             assert str(dish.price) == response.json()['price'], 'Dish title is not equal'
 
         # Watch menu
-        response = await ac.get(f'/menus/{menu.id}', follow_redirects=True)
+        req_url = api.url_path_for('get_menu', menu_id=menu.id)
+        response = await ac.get(req_url, follow_redirects=True)
         assert response.status_code == 200, 'Can`t get menu by id'
         assert str(menu.id) == response.json()['id'], 'Menu id is not equal'
         assert menu.title == response.json()['title'], 'Menu title is not equal'
@@ -86,7 +91,8 @@ class TestDishesAndSubmenusCount:
         assert response.json()['dishes_count'] == 2, 'Invalid dishes count'
 
         # Watch submenu
-        response = await ac.get(f'/menus/1/submenus/{submenu.id}', follow_redirects=True)
+        req_url = api.url_path_for('get_submenu', menu_id=1, submenu_id=submenu.id)
+        response = await ac.get(req_url, follow_redirects=True)
         assert response.status_code == 200, 'Can`t get submenu by id'
         assert str(submenu.id) == response.json()['id'], 'Submenu id is not equal'
         assert submenu.title == response.json()['title'], 'Submenu title is not equal'
@@ -94,22 +100,26 @@ class TestDishesAndSubmenusCount:
         assert response.json()['dishes_count'] == 2, 'Invalid dishes count'
 
         # Delete submenu
-        response = await ac.delete(f'/menus/{menu.id}/submenus/{submenu.id}', follow_redirects=True)
+        req_url = api.url_path_for('delete_submenu', menu_id=menu.id, submenu_id=submenu.id)
+        response = await ac.delete(req_url, follow_redirects=True)
         assert response.status_code == 200, 'Can`t delete submenu by id'
         assert not response.json(), 'Invalid response'
 
         # Watch submenus
-        response = await ac.get(f'/menus/{menu.id}/submenus', follow_redirects=True)
+        req_url = api.url_path_for('get_all_submenus_in_menu', menu_id=menu.id)
+        response = await ac.get(req_url, follow_redirects=True)
         assert response.status_code == 200, 'Can`t get all submenus'
         assert response.text[0] == '[' and response.text[-1] == ']', 'Response json is not a list'
 
         # Watch dishes
-        response = await ac.get(f'/menus/{menu.id}/submenus/{submenu.id}/dishes', follow_redirects=True)
+        req_url = api.url_path_for('get_all_dishes_in_submenu', menu_id=menu.id, submenu_id=submenu.id)
+        response = await ac.get(req_url, follow_redirects=True)
         assert response.status_code == 200, 'Can`t get all dishes'
         assert response.text[0] == '[' and response.text[-1] == ']', 'Response json is not a list'
 
         # Watch menu
-        response = await ac.get(f'/menus/{menu.id}', follow_redirects=True)
+        req_url = api.url_path_for('get_menu', menu_id=menu.id)
+        response = await ac.get(req_url, follow_redirects=True)
         assert response.status_code == 200, 'Can`t get menu by id'
         assert str(menu.id) == response.json()['id'], 'Menu id is not equal'
         assert menu.title == response.json()['title'], 'Menu title is not equal'
@@ -118,11 +128,13 @@ class TestDishesAndSubmenusCount:
         assert response.json()['dishes_count'] == 0, 'Invalid dishes count'
 
         # Delete menu
-        response = await ac.delete(f'/menus/{menu.id}', follow_redirects=True)
+        req_url = api.url_path_for('delete_menu', menu_id=menu.id)
+        response = await ac.delete(req_url, follow_redirects=True)
         assert response.status_code == 200, 'Can`t delete menu by id'
         assert not response.json(), 'Invalid response'
 
         # Show menus
-        response = await ac.get('/menus', follow_redirects=True)
+        req_url = api.url_path_for('get_all_menus')
+        response = await ac.get(req_url, follow_redirects=True)
         assert response.status_code == 200, 'Can`t get all menus'
         assert response.text[0] == '[' and response.text[-1] == ']', 'Response json is not a list'

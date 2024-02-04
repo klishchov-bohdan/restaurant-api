@@ -43,7 +43,7 @@ async def get_menu(menu_id: int, uow: UOWDependency):
              status_code=status.HTTP_201_CREATED,
              description='Create and return new Menu',
              summary='Create new Menu')
-async def create(menu: CreateMenuSchema, uow: UOWDependency):
+async def create_menu(menu: CreateMenuSchema, uow: UOWDependency):
     created_menu = await MenuService(uow=uow).create(menu=menu)
     return OutMenuSchema.model_validate(created_menu)
 
@@ -53,7 +53,7 @@ async def create(menu: CreateMenuSchema, uow: UOWDependency):
               status_code=status.HTTP_200_OK,
               description='Update and return Menu',
               summary='Update Menu')
-async def update(menu_id: int, menu: CreateMenuSchema, uow: UOWDependency):
+async def update_menu(menu_id: int, menu: CreateMenuSchema, uow: UOWDependency):
     try:
         updated_menu = await MenuService(uow=uow).update(id=menu_id, menu=menu)
         return OutMenuSchema.model_validate(updated_menu)
@@ -65,7 +65,7 @@ async def update(menu_id: int, menu: CreateMenuSchema, uow: UOWDependency):
                status_code=status.HTTP_200_OK,
                description='Delete Menu by id',
                summary='Delete Menu by id')
-async def delete(menu_id: int, uow: UOWDependency):
+async def delete_menu(menu_id: int, uow: UOWDependency):
     try:
         await MenuService(uow=uow).delete(id=menu_id)
     except DataNotFound:

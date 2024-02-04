@@ -44,7 +44,7 @@ async def get_dish(menu_id: int, submenu_id: int, dish_id: int, uow: UOWDependen
              status_code=status.HTTP_201_CREATED,
              description='Create and return new Dish',
              summary='Create new Dish')
-async def create(menu_id: int, submenu_id: int, dish: CreateDishSchema, uow: UOWDependency):
+async def create_dish(menu_id: int, submenu_id: int, dish: CreateDishSchema, uow: UOWDependency):
     created_dish = await DishService(uow=uow).create(submenu_id=submenu_id, dish=dish)
     return OutDishSchema.model_validate(created_dish)
 
@@ -54,7 +54,7 @@ async def create(menu_id: int, submenu_id: int, dish: CreateDishSchema, uow: UOW
               status_code=status.HTTP_200_OK,
               description='Update and return Dish',
               summary='Update Dish')
-async def update(menu_id: int, submenu_id: int, dish_id: int, dish: CreateDishSchema, uow: UOWDependency):
+async def update_dish(menu_id: int, submenu_id: int, dish_id: int, dish: CreateDishSchema, uow: UOWDependency):
     try:
         updated_submenu = await DishService(uow=uow).update(id=dish_id, dish=dish)
         return OutDishSchema.model_validate(updated_submenu)
@@ -66,7 +66,7 @@ async def update(menu_id: int, submenu_id: int, dish_id: int, dish: CreateDishSc
                status_code=status.HTTP_200_OK,
                description='Delete Dish by id',
                summary='Delete Dish by id')
-async def delete(menu_id: int, submenu_id: int, dish_id: int, uow: UOWDependency):
+async def delete_dish(menu_id: int, submenu_id: int, dish_id: int, uow: UOWDependency):
     try:
         await DishService(uow=uow).delete(id=dish_id)
     except DataNotFound:

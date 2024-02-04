@@ -1,3 +1,4 @@
+from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy import insert, select
 
@@ -6,14 +7,15 @@ from tests.conftest import async_session_maker_test
 
 
 class TestMenu:
-    async def test_get_all_menus(self, ac: AsyncClient):
+    async def test_get_all_menus(self, ac: AsyncClient, api: FastAPI):
         stmt = (
             insert(Menu).values(title='title3', description='description3').returning(Menu.id)
         )
         async with async_session_maker_test() as db:
             await db.execute(stmt)
             await db.commit()
-        response = await ac.get('/menus', follow_redirects=True)
+        req_url = api.url_path_for('get_all_menus')
+        response = await ac.get(req_url, follow_redirects=True)
         assert response.status_code == 200, 'Can`t get all menus'
         assert response.text[0] == '[' and response.text[-1] == ']', 'Response json is not a list'
         async with async_session_maker_test() as db:
@@ -25,8 +27,9 @@ class TestMenu:
             assert menu.title == response.json()[idx]['title'], 'Menu title is not equal'
             assert menu.description == response.json()[idx]['description'], 'Menu description is not equal'
 
-    async def test_create(self, ac: AsyncClient):
-        response = await ac.post('/menus', follow_redirects=True,
+    async def test_create(self, ac: AsyncClient, api: FastAPI):
+        req_url = api.url_path_for('create_menu')
+        response = await ac.post(req_url, follow_redirects=True,
                                  json={
                                      'title': 'title1',
                                      'description': 'description1'
@@ -46,7 +49,7 @@ class TestMenu:
         assert menu.title == response.json()['title'], 'Menu title is not equal'
         assert menu.description == response.json()['description'], 'Menu description is not equal'
 
-    async def test_get_menu(self, ac: AsyncClient):
+    async def test_get_menu(self, ac: AsyncClient, api: FastAPI):
         stmt = (
             insert(Menu).values(title='title1', description='description1').returning(Menu)
         )
@@ -54,15 +57,17 @@ class TestMenu:
             result = await db.execute(stmt)
             menu = result.fetchone()[0]
             await db.commit()
-        response = await ac.get(f'/menus/{menu.id}', follow_redirects=True)
+        req_url = api.url_path_for('get_menu', menu_id=menu.id)
+        response = await ac.get(req_url, follow_redirects=True)
         assert response.status_code == 200, 'Can`t get menu by id'
         assert response.json()['id'], 'Response haven`t a field id'
         assert str(menu.id) == response.json()['id'], 'Menu id is not equal'
         assert menu.title == response.json()['title'], 'Menu title is not equal'
         assert menu.description == response.json()['description'], 'Menu description is not equal'
 
-    async def test_update(self, ac: AsyncClient):
-        response = await ac.patch('/menus/1', follow_redirects=True,
+    async def test_update(self, ac: AsyncClient, api: FastAPI):
+        req_url = api.url_path_for('update_menu', menu_id=1)
+        response = await ac.patch(req_url, follow_redirects=True,
                                   json={
                                       'title': 'new_title',
                                       'description': 'new_description'
@@ -83,7 +88,7 @@ class TestMenu:
         assert menu.title == response.json()['title'], 'Menu title is not equal'
         assert menu.description == response.json()['description'], 'Menu description is not equal'
 
-    async def test_delete(self, ac: AsyncClient):
+    async def test_delete(self, ac: AsyncClient, api: FastAPI):
         stmt = (
             insert(Menu).values(title='title1', description='description1').returning(Menu.id)
         )
@@ -91,7 +96,8 @@ class TestMenu:
             result = await db.execute(stmt)
             menu_id = result.fetchone()[0]
             await db.commit()
-        response = await ac.delete(f'/menus/{menu_id}', follow_redirects=True)
+        req_url = api.url_path_for('delete_menu', menu_id=menu_id)
+        response = await ac.delete(req_url, follow_redirects=True)
         assert response.status_code == 200, 'Can`t delete menu by id'
         assert not response.json(), 'Invalid response'
         query = (

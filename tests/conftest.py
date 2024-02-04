@@ -1,6 +1,7 @@
 from typing import AsyncGenerator, Final
 
 import pytest
+from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy import NullPool, text
 from sqlalchemy.ext.asyncio import (
@@ -61,5 +62,10 @@ async def prepare_database():
 
 @pytest.fixture(scope='session')
 async def ac() -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(app=app, base_url='http://test/api/v1') as async_client:
+    async with AsyncClient(app=app, base_url='http://test') as async_client:
         yield async_client
+
+
+@pytest.fixture(scope='session')
+async def api() -> FastAPI:
+    return app
