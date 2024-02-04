@@ -1,16 +1,14 @@
 from httpx import AsyncClient
-from sqlalchemy import select, insert
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import insert, select
 
 from app.models import Menu
-from app.services.menus.schemas import OutMenuSchema
 from tests.conftest import async_session_maker_test
 
 
 class TestMenu:
     async def test_get_all_menus(self, ac: AsyncClient):
         stmt = (
-            insert(Menu).values(title='title1', description='description1').returning(Menu.id)
+            insert(Menu).values(title='title3', description='description3').returning(Menu.id)
         )
         async with async_session_maker_test() as db:
             await db.execute(stmt)
@@ -30,8 +28,8 @@ class TestMenu:
     async def test_create(self, ac: AsyncClient):
         response = await ac.post('/menus', follow_redirects=True,
                                  json={
-                                     "title": "title1",
-                                     "description": "description1"
+                                     'title': 'title1',
+                                     'description': 'description1'
                                  })
         assert response.status_code == 201, 'Can`t create menu'
         assert response.json()['title'], 'Response haven`t a field title'

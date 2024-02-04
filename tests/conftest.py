@@ -1,13 +1,20 @@
-from typing import Final, AsyncGenerator
+from typing import AsyncGenerator, Final
 
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import NullPool, text
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from app.config import settings
-from app.database import metadata, get_async_session
+from app.database import metadata
+from app.dependencies import get_uow
 from app.main import app
+from app.utils.uow import UnitOfWork
 
 _SQLALCHEMY_DATABASE_URL_TEST: Final[
     str] = f'postgresql+asyncpg://{settings.postgres_test.user}:{settings.postgres_test.password}' \
@@ -23,7 +30,12 @@ async def override_get_async_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_maker_test() as session:
         yield session
 
-app.dependency_overrides[get_async_session] = override_get_async_session
+
+def override_get_uow():
+    return UnitOfWork(session_maker=async_session_maker_test)
+
+
+app.dependency_overrides[get_uow] = override_get_uow
 
 
 @pytest.fixture(autouse=True, scope='session')
@@ -49,6 +61,5 @@ async def prepare_database():
 
 @pytest.fixture(scope='session')
 async def ac() -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(app=app, base_url="http://test/api/v1") as async_client:
+    async with AsyncClient(app=app, base_url='http://test/api/v1') as async_client:
         yield async_client
-

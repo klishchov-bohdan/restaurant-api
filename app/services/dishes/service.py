@@ -1,83 +1,39 @@
-from typing import Optional
-
-from sqlalchemy import select, insert, update, delete
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import status, HTTPException
-from decimal import Decimal, getcontext
-
-from app.models import Dish
+from app.schemas import DishSchema
+from app.services.dishes.schemas import CreateDishSchema
+from app.utils.uow import IUnitOfWork
 
 
-async def get_dishes(submenu_id: int, session: AsyncSession) -> list[Dish]:
-    try:
-        stmt = select(Dish).where(Dish.submenu_id == submenu_id)
-        result = await session.execute(stmt)
-        return [dish[0] for dish in result.all()]
+class DishService:
+    def __init__(self, uow: IUnitOfWork):
+        self.uow = uow
 
-    except SQLAlchemyError as ex:
-        print(ex)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad request")
+    async def get_all_in_submenu(self, submenu_id: int) -> list[DishSchema]:
+        async with self.uow:
+            dishes = await self.uow.dish_repo.find_all(submenu_id=submenu_id)
+        return dishes
 
-
-async def get_dish_by_id(submenu_id: int, dish_id: int, session: AsyncSession) -> Optional[Dish]:
-    try:
-        stmt = (
-            select(Dish).where(Dish.submenu_id == submenu_id).where(
-                Dish.id == dish_id)
-        )
-        result = await session.execute(stmt)
-        first = result.first()
-        if first is None:
-            return
-        dish = first.Dish
+    async def get_one(self, id: int) -> DishSchema:
+        async with self.uow:
+            dish = await self.uow.dish_repo.find_one(id=id)
         return dish
-    except SQLAlchemyError as ex:
-        print(ex)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad request")
 
+    async def create(self, submenu_id: int, dish: CreateDishSchema) -> DishSchema:
+        dish_dict = dish.model_dump()
+        dish_dict['submenu_id'] = submenu_id
+        async with self.uow:
+            created_dish = await self.uow.dish_repo.add_one(data=dish_dict)
+            await self.uow.commit()
+        return created_dish
 
-async def create_dish(submenu_id: int, title: str, description: str, price: Decimal, session: AsyncSession) -> Dish:
-    try:
-        price = round(price, 2)
-        stmt = (
-            insert(Dish).values(title=title, description=description, submenu_id=submenu_id, price=price).returning(Dish)
-        )
-        result = await session.execute(stmt)
-        await session.commit()
-        return result.fetchone()[0]
-    except SQLAlchemyError as ex:
-        print(ex)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad request")
+    async def update(self, id: int, dish: CreateDishSchema) -> DishSchema:
+        dish_dict = dish.model_dump()
+        async with self.uow:
+            updated_dish = await self.uow.dish_repo.edit_one(id=id, data=dish_dict)
+            await self.uow.commit()
+        return updated_dish
 
-
-async def update_dish(submenu_id: int, dish_id: int, title: str, description: str,
-                      price: Decimal, session: AsyncSession) -> Dish:
-    try:
-        price = round(price, 2)
-        stmt = (
-            update(Dish)
-            .where(Dish.submenu_id == submenu_id)
-            .where(Dish.id == dish_id)
-            .values(title=title, description=description, price=price).returning(Dish)
-        )
-        result = await session.execute(stmt)
-        await session.commit()
-        return result.fetchone()[0]
-    except SQLAlchemyError as ex:
-        print(ex)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad request")
-
-
-async def delete_dish(submenu_id: int, dish_id, session: AsyncSession):
-    try:
-        stmt = (
-            delete(Dish)
-            .where(Dish.submenu_id == submenu_id)
-            .where(Dish.id == dish_id)
-        )
-        await session.execute(stmt)
-        await session.commit()
-    except SQLAlchemyError as ex:
-        print(ex)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad request")
+    async def delete(self, id: int) -> int:
+        async with self.uow:
+            deleted_id = await self.uow.dish_repo.delete_one(id=id)
+            await self.uow.commit()
+        return deleted_id

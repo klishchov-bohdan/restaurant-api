@@ -1,7 +1,7 @@
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from app.models import Menu, Submenu, Dish
+from app.models import Dish, Menu, Submenu
 from tests.conftest import async_session_maker_test
 
 
@@ -10,8 +10,8 @@ class TestDishesAndSubmenusCount:
         # Create menu
         response = await ac.post('/menus', follow_redirects=True,
                                  json={
-                                     "title": "title1",
-                                     "description": "description1"
+                                     'title': 'title1',
+                                     'description': 'description1'
                                  })
         assert response.status_code == 201, 'Can`t create menu'
         assert response.json()['title'], 'Response haven`t a field title'
@@ -31,8 +31,8 @@ class TestDishesAndSubmenusCount:
         # Create submenu
         response = await ac.post(f'/menus/{menu.id}/submenus', follow_redirects=True,
                                  json={
-                                     "title": "title1",
-                                     "description": "description1"
+                                     'title': 'title1',
+                                     'description': 'description1'
                                  })
         assert response.status_code == 201, 'Can`t create submenu'
         assert response.json()['title'], 'Response haven`t a field title'
@@ -54,9 +54,9 @@ class TestDishesAndSubmenusCount:
         for num in range(1, 3):
             response = await ac.post(f'/menus/{menu.id}/submenus/{submenu.id}/dishes', follow_redirects=True,
                                      json={
-                                         "title": f"title{num}",
-                                         "description": f"description{num}",
-                                         "price": f"54.1{num}"
+                                         'title': f'title{num}',
+                                         'description': f'description{num}',
+                                         'price': f'54.1{num}'
                                      })
             assert response.status_code == 201, 'Can`t create dish'
             assert response.json()['title'], 'Response haven`t a field title'
@@ -76,7 +76,7 @@ class TestDishesAndSubmenusCount:
             assert dish.description == response.json()['description'], 'Dish description is not equal'
             assert str(dish.price) == response.json()['price'], 'Dish title is not equal'
 
-        #Watch menu
+        # Watch menu
         response = await ac.get(f'/menus/{menu.id}', follow_redirects=True)
         assert response.status_code == 200, 'Can`t get menu by id'
         assert str(menu.id) == response.json()['id'], 'Menu id is not equal'

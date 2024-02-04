@@ -16,7 +16,7 @@ class TestDish:
             result = await db.execute(stmt)
             dish = result.fetchone()[0]
             await db.commit()
-        response = await ac.get(f'/menus/1/submenus/1/dishes', follow_redirects=True)
+        response = await ac.get('/menus/1/submenus/1/dishes', follow_redirects=True)
         assert response.status_code == 200, 'Can`t get all dishes'
         assert response.text[0] == '[' and response.text[-1] == ']', 'Response json is not a list'
         async with async_session_maker_test() as db:
@@ -32,9 +32,9 @@ class TestDish:
     async def test_create(self, ac: AsyncClient):
         response = await ac.post('/menus/1/submenus/1/dishes', follow_redirects=True,
                                  json={
-                                     "title": "title1",
-                                     "description": "description1",
-                                     "price": "54.12"
+                                     'title': 'title1',
+                                     'description': 'description1',
+                                     'price': '54.12'
                                  })
         assert response.status_code == 201, 'Can`t create dish'
         assert response.json()['title'], 'Response haven`t a field title'
@@ -119,7 +119,8 @@ class TestDish:
 
     async def test_delete(self, ac: AsyncClient):
         stmt = (
-            insert(Dish).values(title='title1', description='description1', price='43.12', submenu_id=1).returning(Dish.id)
+            insert(Dish).values(title='title1', description='description1',
+                                price='43.12', submenu_id=1).returning(Dish.id)
         )
         async with async_session_maker_test() as db:
             result = await db.execute(stmt)

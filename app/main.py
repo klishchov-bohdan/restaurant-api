@@ -1,8 +1,6 @@
-import asyncio
-
 from fastapi import FastAPI
-from app.services import menu_router, submenu_router, dish_router
 
+from app.services import dish_router, menu_router, submenu_router
 
 app = FastAPI()
 
@@ -19,4 +17,3 @@ app = FastAPI()
 app.include_router(menu_router, prefix='/api/v1')
 app.include_router(submenu_router, prefix='/api/v1')
 app.include_router(dish_router, prefix='/api/v1')
-

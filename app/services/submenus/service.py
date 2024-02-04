@@ -1,97 +1,39 @@
-from typing import Dict, Any
-
-from sqlalchemy import select, insert, update, delete, func, distinct
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import status, HTTPException
-
-from app.models import Submenu, Dish
+from app.schemas import SubmenuSchema
+from app.services.submenus.schemas import CreateSubmenuSchema
+from app.utils.uow import IUnitOfWork
 
 
-async def get_submenus(menu_id: int, session: AsyncSession):
-    try:
-        stmt = (
-            select(Submenu,
-                   func.count(distinct(Dish.id)).label('dishes_count'))
-            .outerjoin(Dish, Submenu.id == Dish.submenu_id)
-            .group_by(Submenu.id)
-        )
-        result = await session.execute(stmt)
-        return [{
-            'id': submenu[0].id,
-            'title': submenu[0].title,
-            'description': submenu[0].description,
-            'menu_id': submenu[0].menu_id,
-            'dishes': submenu[0].dishes,
-            'dishes_count': submenu[1],
-        } for submenu in result.all()]
-    except SQLAlchemyError as ex:
-        print(ex)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad request")
+class SubmenuService:
+    def __init__(self, uow: IUnitOfWork):
+        self.uow = uow
 
+    async def get_all_in_menu(self, menu_id: int) -> list[SubmenuSchema]:
+        async with self.uow:
+            submenus = await self.uow.submenu_repo.find_all(menu_id=menu_id)
+        return submenus
 
-async def get_submenu_by_id(menu_id: int, submenu_id: int, session: AsyncSession):
-    try:
-        stmt = (
-            select(Submenu,
-                   func.count(distinct(Dish.id)).label('dishes_count'))
-            .where(Submenu.id == submenu_id)
-            .outerjoin(Dish, Submenu.id == Dish.submenu_id)
-            .group_by(Submenu.id)
-        )
-        result = await session.execute(stmt)
-        submenu = result.first()
-        if submenu is None:
-            return
-        return {
-            'id': submenu[0].id,
-            'title': submenu[0].title,
-            'description': submenu[0].description,
-            'menu_id': submenu[0].menu_id,
-            'dishes': submenu[0].dishes,
-            'dishes_count': submenu[1],
-        }
-    except SQLAlchemyError as ex:
-        print(ex)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad request")
-
-
-async def create_submenu(menu_id: int, title: str, description: str, session: AsyncSession) -> dict[str, Any] | None:
-    try:
-        stmt = (
-            insert(Submenu).values(title=title, description=description, menu_id=menu_id).returning(Submenu.id)
-        )
-        result = await session.execute(stmt)
-        submenu = await get_submenu_by_id(menu_id, result.fetchone()[0], session)
-        await session.commit()
+    async def get_one(self, id: int) -> SubmenuSchema:
+        async with self.uow:
+            submenu = await self.uow.submenu_repo.find_one(id=id)
         return submenu
-    except SQLAlchemyError as ex:
-        print(ex)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad request")
 
+    async def create(self, menu_id: int, submenu: CreateSubmenuSchema) -> SubmenuSchema:
+        submenu_dict = submenu.model_dump()
+        submenu_dict['menu_id'] = menu_id
+        async with self.uow:
+            created_submenu = await self.uow.submenu_repo.add_one(data=submenu_dict)
+            await self.uow.commit()
+        return created_submenu
 
-async def update_submenu(menu_id: int, submenu_id: int, title: str, description: str, session: AsyncSession) -> dict[
-                                                                                                                    str, Any] | None:
-    try:
-        stmt = (
-            update(Submenu).where(Submenu.id == submenu_id).where(Submenu.menu_id == menu_id).values(title=title, description=description).returning(Submenu.id)
-        )
-        result = await session.execute(stmt)
-        submenu = await get_submenu_by_id(menu_id, result.fetchone()[0], session)
-        await session.commit()
-        return submenu
-    except SQLAlchemyError as ex:
-        print(ex)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad request")
+    async def update(self, id: int, submenu: CreateSubmenuSchema) -> SubmenuSchema:
+        submenu_dict = submenu.model_dump()
+        async with self.uow:
+            updated_submenu = await self.uow.submenu_repo.edit_one(id=id, data=submenu_dict)
+            await self.uow.commit()
+        return updated_submenu
 
-
-async def delete_submenu(menu_id: int, submenu_id: int, session: AsyncSession):
-    try:
-        stmt = (
-            delete(Submenu).where(Submenu.id == submenu_id).where(Submenu.menu_id == menu_id)
-        )
-        await session.execute(stmt)
-        await session.commit()
-    except SQLAlchemyError as ex:
-        print(ex)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad request")
+    async def delete(self, id: int) -> int:
+        async with self.uow:
+            deleted_id = await self.uow.submenu_repo.delete_one(id=id)
+            await self.uow.commit()
+        return deleted_id

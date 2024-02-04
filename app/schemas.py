@@ -1,14 +1,11 @@
 from decimal import Decimal
-from typing import Optional
 
-from pydantic import BaseModel, Field, validator, ConfigDict
-from typing_extensions import Annotated
-from fastapi.param_functions import Form
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class DishSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int
+    id: int | str
     title: str
     description: str
     price: Decimal = Field(ge=.01)
@@ -16,16 +13,18 @@ class DishSchema(BaseModel):
 
 class SubmenuSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int
+    id: int | str
     title: str
     description: str
-    dishes: Optional[list[DishSchema]]
+    dishes_count: int
+    dishes: list[DishSchema] | None
 
 
 class MenuSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int
+    id: int | str
     title: str
     description: str
-    submenus: Optional[list[SubmenuSchema]]
-
+    submenus_count: int
+    dishes_count: int
+    submenus: list[SubmenuSchema] | None

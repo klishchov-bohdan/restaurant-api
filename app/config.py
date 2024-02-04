@@ -1,5 +1,4 @@
-from pydantic import PostgresDsn, Field, ConfigDict, Extra
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
 
 
 class PostgresSettings(BaseSettings):
@@ -14,7 +13,8 @@ class PostgresSettings(BaseSettings):
 class Settings(BaseSettings):
     # host: str
     # port: int
-    postgres_test: PostgresSettings = PostgresSettings(_env_file='.env.test', _env_prefix='postgres_', _env_file_encoding='utf-8')
+    postgres_test: PostgresSettings = PostgresSettings(
+        _env_file='.env.test', _env_prefix='postgres_', _env_file_encoding='utf-8')
     postgres: PostgresSettings = PostgresSettings(_env_file='.env', _env_prefix='postgres_', _env_file_encoding='utf-8')
 
 

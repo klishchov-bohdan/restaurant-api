@@ -1,6 +1,6 @@
+from fastapi.param_functions import Form
 from pydantic import BaseModel, Field, field_validator
 from typing_extensions import Annotated
-from fastapi.param_functions import Form
 
 from app.schemas import SubmenuSchema
 
@@ -14,6 +14,6 @@ class OutSubmenuSchema(SubmenuSchema):
     id: str
     dishes_count: int
 
-    @field_validator("id", mode='before')
+    @field_validator('id', mode='before')
     def transform_id_to_str(cls, value) -> str:
         return str(value)
