@@ -4,13 +4,15 @@ services:
   db:
     image: postgres:15.1-alpine
     container_name: restaurant
-    command: -p 1221
+    command: -p ${POSTGRES_PORT}
     ports:
-      - "1221:1221"
+      - ${POSTGRES_PORT}:${POSTGRES_PORT}
     expose:
-      - 1221
-    env_file:
-      - .env.prod
+      - ${POSTGRES_PORT}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - db-postgres:/var/lib/postgresql/data
     networks:
@@ -24,13 +26,15 @@ services:
   db_test:
     image: postgres:15.1-alpine
     container_name: restaurant_test
-    command: -p 1222
+    command: -p ${TEST_POSTGRES_PORT}
     ports:
-      - "1222:1222"
+      - ${TEST_POSTGRES_PORT}:${TEST_POSTGRES_PORT}
     expose:
-      - 1222
-    env_file:
-      - .env.test
+      - ${TEST_POSTGRES_PORT}
+    environment:
+      POSTGRES_USER: ${TEST_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${TEST_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${TEST_POSTGRES_DB}
     volumes:
       - db-postgres-test:/var/lib/postgresql/data
     networks:
@@ -40,6 +44,23 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  cache-redis:
+    image: redis:7.2-alpine
+    hostname: cache_redis
+    container_name: cache_redis
+    restart: on-failure
+    ports:
+      - ${REDIS_PORT}:${REDIS_PORT}
+    expose:
+      - ${REDIS_PORT}
+    command: redis-server
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+    volumes:
+      - cache:/data
+    networks:
+      - my-net
 
   app:
     build:
@@ -53,6 +74,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      cache-redis:
+        condition: service_healthy
     volumes:
       - ./app:/home/restaurant/app
     networks:
@@ -61,14 +84,14 @@ services:
   app_tests:
     build:
       context: .
-    env_file:
-      - .env.test
     container_name: api_tests
     command: ["./docker/app_test.sh"]
 #    ports:
 #      - "9999:8000"
     depends_on:
       db_test:
+        condition: service_healthy
+      cache-redis:
         condition: service_healthy
     volumes:
       - ./app:/home/restaurant/app
@@ -79,6 +102,8 @@ volumes:
   db-postgres:
     driver: local
   db-postgres-test:
+    driver: local
+  cache:
     driver: local
 
 

@@ -1,8 +1,12 @@
+import asyncio
 from typing import AsyncGenerator, Final
 
 import pytest
 from fastapi import FastAPI
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
 from httpx import AsyncClient
+from redis import asyncio as aioredis
 from sqlalchemy import NullPool, text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -41,6 +45,8 @@ app.dependency_overrides[get_uow] = override_get_uow
 
 @pytest.fixture(autouse=True, scope='session')
 async def prepare_database():
+    redis = aioredis.from_url(f'redis://{settings.redis.server}:{settings.redis.port}')
+    FastAPICache.init(RedisBackend(redis), prefix='fastapi-cache')
     async with engine_test.begin() as conn:
         await conn.run_sync(metadata.create_all)  # TODO: careate tables if they are not exists
         await conn.execute(text("insert into menu (title, description) values ('title1', 'description1')"))
@@ -53,11 +59,14 @@ async def prepare_database():
 
 
 # event loop create in pytest_asyncio/plugin.py:749:
-# @pytest.fixture(scope='session')
-# def event_loop(request):
-#     loop = asyncio.get_event_loop_policy().new_event_loop()
-#     yield loop
-#     loop.close()
+@pytest.fixture(scope='session')
+def event_loop():
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+    yield loop
+    loop.close()
 
 
 @pytest.fixture(scope='session')

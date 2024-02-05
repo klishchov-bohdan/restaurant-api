@@ -1,6 +1,8 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
+from fastapi_cache.decorator import cache
 
-from app.dependencies import UOWDependency
+from app.constants import request_key_builder
+from app.dependencies import UOWDependency, invalidate_cache
 from app.exceptions import DataNotFound
 from app.services.menus.exeptions import MenuNotFoundError
 from app.services.menus.schemas import CreateMenuSchema, OutMenuSchema
@@ -17,6 +19,7 @@ router = APIRouter(
             status_code=status.HTTP_200_OK,
             description='Returning the list of the Menus',
             summary='Get all menus')
+@cache(namespace='menus', key_builder=request_key_builder)
 async def get_all_menus(uow: UOWDependency):
     try:
         menus = await MenuService(uow=uow).get_all()
@@ -30,6 +33,7 @@ async def get_all_menus(uow: UOWDependency):
             status_code=status.HTTP_200_OK,
             description='Returning the Menu by the id',
             summary='Get menu by id')
+@cache(namespace='menus', key_builder=request_key_builder)
 async def get_menu(menu_id: int, uow: UOWDependency):
     try:
         menu = await MenuService(uow=uow).get_one(id=menu_id)
@@ -43,7 +47,7 @@ async def get_menu(menu_id: int, uow: UOWDependency):
              status_code=status.HTTP_201_CREATED,
              description='Create and return new Menu',
              summary='Create new Menu')
-async def create_menu(menu: CreateMenuSchema, uow: UOWDependency):
+async def create_menu(menu: CreateMenuSchema, uow: UOWDependency, res=Depends(invalidate_cache)):
     created_menu = await MenuService(uow=uow).create(menu=menu)
     return OutMenuSchema.model_validate(created_menu)
 
@@ -53,7 +57,7 @@ async def create_menu(menu: CreateMenuSchema, uow: UOWDependency):
               status_code=status.HTTP_200_OK,
               description='Update and return Menu',
               summary='Update Menu')
-async def update_menu(menu_id: int, menu: CreateMenuSchema, uow: UOWDependency):
+async def update_menu(menu_id: int, menu: CreateMenuSchema, uow: UOWDependency, res=Depends(invalidate_cache)):
     try:
         updated_menu = await MenuService(uow=uow).update(id=menu_id, menu=menu)
         return OutMenuSchema.model_validate(updated_menu)
@@ -65,7 +69,7 @@ async def update_menu(menu_id: int, menu: CreateMenuSchema, uow: UOWDependency):
                status_code=status.HTTP_200_OK,
                description='Delete Menu by id',
                summary='Delete Menu by id')
-async def delete_menu(menu_id: int, uow: UOWDependency):
+async def delete_menu(menu_id: int, uow: UOWDependency, res=Depends(invalidate_cache)):
     try:
         await MenuService(uow=uow).delete(id=menu_id)
     except DataNotFound:
