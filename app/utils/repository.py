@@ -34,14 +34,14 @@ class SQLAlchemyRepository(AbstractRepository):
     model: Any = None
 
     def __init__(self, session: AsyncSession):
-        self.session = session
+        self.session: AsyncSession = session
 
-    async def add_one(self, data: dict):
+    async def add_one(self, data: dict) -> Any:
         stmt = insert(self.model).values(**data).returning(self.model)
         res = await self.session.execute(stmt)
         return res.scalar_one().to_schema()
 
-    async def edit_one(self, id: int, data: dict):
+    async def edit_one(self, id: int, data: dict) -> Any:
         try:
             stmt = update(self.model).values(**data).filter_by(id=id).returning(self.model)
             res = await self.session.execute(stmt)
@@ -49,7 +49,7 @@ class SQLAlchemyRepository(AbstractRepository):
         except NoResultFound as ex:
             raise DataNotFound(ex)
 
-    async def find_all(self, **filter_by):
+    async def find_all(self, **filter_by) -> list[Any]:
         try:
             stmt = select(self.model).filter_by(**filter_by)
             res = await self.session.execute(stmt)
@@ -57,7 +57,7 @@ class SQLAlchemyRepository(AbstractRepository):
         except NoResultFound as ex:
             raise DataNotFound(ex)
 
-    async def find_one(self, **filter_by):
+    async def find_one(self, **filter_by) -> Any:
         try:
             stmt = select(self.model).filter_by(**filter_by)
             res = await self.session.execute(stmt)
@@ -65,7 +65,7 @@ class SQLAlchemyRepository(AbstractRepository):
         except NoResultFound as ex:
             raise DataNotFound(ex)
 
-    async def delete_one(self, id: int):
+    async def delete_one(self, id: int) -> int:
         try:
             stmt = delete(self.model).where(self.model.id == id).returning(self.model.id)
             res = await self.session.execute(stmt)

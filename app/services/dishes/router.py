@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, status
 from fastapi_cache.decorator import cache
 
 from app.constants import request_key_builder
-from app.dependencies import UOWDependency, invalidate_cache
+from app.dependencies import InvCacheDependency, UOWDependency
 from app.exceptions import DataNotFound
 from app.services.dishes.exeptions import DishNotFoundError
 from app.services.dishes.schemas import CreateDishSchema, OutDishSchema
@@ -48,7 +48,7 @@ async def get_dish(menu_id: int, submenu_id: int, dish_id: int, uow: UOWDependen
              status_code=status.HTTP_201_CREATED,
              description='Create and return new Dish',
              summary='Create new Dish')
-async def create_dish(menu_id: int, submenu_id: int, dish: CreateDishSchema, uow: UOWDependency, res=Depends(invalidate_cache)):
+async def create_dish(menu_id: int, submenu_id: int, dish: CreateDishSchema, uow: UOWDependency, ic: InvCacheDependency):
     created_dish = await DishService(uow=uow).create(submenu_id=submenu_id, dish=dish)
     return OutDishSchema.model_validate(created_dish)
 
@@ -58,7 +58,7 @@ async def create_dish(menu_id: int, submenu_id: int, dish: CreateDishSchema, uow
               status_code=status.HTTP_200_OK,
               description='Update and return Dish',
               summary='Update Dish')
-async def update_dish(menu_id: int, submenu_id: int, dish_id: int, dish: CreateDishSchema, uow: UOWDependency, res=Depends(invalidate_cache)):
+async def update_dish(menu_id: int, submenu_id: int, dish_id: int, dish: CreateDishSchema, uow: UOWDependency, ic: InvCacheDependency):
     try:
         updated_submenu = await DishService(uow=uow).update(id=dish_id, dish=dish)
         return OutDishSchema.model_validate(updated_submenu)
@@ -70,7 +70,7 @@ async def update_dish(menu_id: int, submenu_id: int, dish_id: int, dish: CreateD
                status_code=status.HTTP_200_OK,
                description='Delete Dish by id',
                summary='Delete Dish by id')
-async def delete_dish(menu_id: int, submenu_id: int, dish_id: int, uow: UOWDependency, res=Depends(invalidate_cache)):
+async def delete_dish(menu_id: int, submenu_id: int, dish_id: int, uow: UOWDependency, ic: InvCacheDependency):
     try:
         await DishService(uow=uow).delete(id=dish_id)
     except DataNotFound:

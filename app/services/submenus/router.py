@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, status
 from fastapi_cache.decorator import cache
 
 from app.constants import request_key_builder
-from app.dependencies import UOWDependency, invalidate_cache
+from app.dependencies import InvCacheDependency, UOWDependency
 from app.exceptions import DataNotFound
 from app.services.submenus.exeptions import SubmenuNotFoundError
 from app.services.submenus.schemas import CreateSubmenuSchema, OutSubmenuSchema
@@ -47,7 +47,7 @@ async def get_submenu(menu_id: int, submenu_id: int, uow: UOWDependency):
              status_code=status.HTTP_201_CREATED,
              description='Creating and returning new Submenu',
              summary='Create Submenu')
-async def create_submenu(menu_id: int, submenu: CreateSubmenuSchema, uow: UOWDependency, res=Depends(invalidate_cache)):
+async def create_submenu(menu_id: int, submenu: CreateSubmenuSchema, uow: UOWDependency, ic: InvCacheDependency):
     created_submenu = await SubmenuService(uow=uow).create(menu_id=menu_id, submenu=submenu)
     return OutSubmenuSchema.model_validate(created_submenu)
 
@@ -57,7 +57,7 @@ async def create_submenu(menu_id: int, submenu: CreateSubmenuSchema, uow: UOWDep
               status_code=status.HTTP_200_OK,
               description='Updating and returning the Submenu in menu by id',
               summary='Update Submenu')
-async def update_submenu(menu_id: int, submenu_id: int, submenu: CreateSubmenuSchema, uow: UOWDependency, res=Depends(invalidate_cache)):
+async def update_submenu(menu_id: int, submenu_id: int, submenu: CreateSubmenuSchema, uow: UOWDependency, ic: InvCacheDependency):
     try:
         updated_submenu = await SubmenuService(uow=uow).update(id=submenu_id, submenu=submenu)
         return OutSubmenuSchema.model_validate(updated_submenu)
@@ -69,7 +69,7 @@ async def update_submenu(menu_id: int, submenu_id: int, submenu: CreateSubmenuSc
                status_code=status.HTTP_200_OK,
                description='Delete Submenu by id',
                summary='Delete Submenu by id')
-async def delete_submenu(menu_id: int, submenu_id: int, uow: UOWDependency, res=Depends(invalidate_cache)):
+async def delete_submenu(menu_id: int, submenu_id: int, uow: UOWDependency, ic: InvCacheDependency):
     try:
         await SubmenuService(uow=uow).delete(id=submenu_id)
     except DataNotFound:

@@ -9,7 +9,7 @@ def request_key_builder(
         response: Response = None,
         *args,
         **kwargs,
-):
+) -> str:
     return ':'.join([
         request.url.path,
     ])

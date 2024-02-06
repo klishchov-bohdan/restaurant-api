@@ -17,5 +17,5 @@ class OutDishSchema(DishSchema):
     id: str
 
     @field_validator('id', mode='before')
-    def transform_id_to_str(cls, value) -> str:
+    def transform_id_to_str(cls, value: int) -> str:
         return str(value)

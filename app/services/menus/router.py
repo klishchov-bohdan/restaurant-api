@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, status
 from fastapi_cache.decorator import cache
 
 from app.constants import request_key_builder
-from app.dependencies import UOWDependency, invalidate_cache
+from app.dependencies import InvCacheDependency, UOWDependency
 from app.exceptions import DataNotFound
 from app.services.menus.exeptions import MenuNotFoundError
 from app.services.menus.schemas import CreateMenuSchema, OutMenuSchema
@@ -47,7 +47,7 @@ async def get_menu(menu_id: int, uow: UOWDependency):
              status_code=status.HTTP_201_CREATED,
              description='Create and return new Menu',
              summary='Create new Menu')
-async def create_menu(menu: CreateMenuSchema, uow: UOWDependency, res=Depends(invalidate_cache)):
+async def create_menu(menu: CreateMenuSchema, uow: UOWDependency, ic: InvCacheDependency):
     created_menu = await MenuService(uow=uow).create(menu=menu)
     return OutMenuSchema.model_validate(created_menu)
 
@@ -57,7 +57,7 @@ async def create_menu(menu: CreateMenuSchema, uow: UOWDependency, res=Depends(in
               status_code=status.HTTP_200_OK,
               description='Update and return Menu',
               summary='Update Menu')
-async def update_menu(menu_id: int, menu: CreateMenuSchema, uow: UOWDependency, res=Depends(invalidate_cache)):
+async def update_menu(menu_id: int, menu: CreateMenuSchema, uow: UOWDependency, ic: InvCacheDependency):
     try:
         updated_menu = await MenuService(uow=uow).update(id=menu_id, menu=menu)
         return OutMenuSchema.model_validate(updated_menu)
@@ -69,7 +69,7 @@ async def update_menu(menu_id: int, menu: CreateMenuSchema, uow: UOWDependency, 
                status_code=status.HTTP_200_OK,
                description='Delete Menu by id',
                summary='Delete Menu by id')
-async def delete_menu(menu_id: int, uow: UOWDependency, res=Depends(invalidate_cache)):
+async def delete_menu(menu_id: int, uow: UOWDependency, ic: InvCacheDependency):
     try:
         await MenuService(uow=uow).delete(id=menu_id)
     except DataNotFound:
