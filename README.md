@@ -32,6 +32,12 @@ Run the following command to deploy the restaurant API and databases:
 ```
 docker compose --env-file .env.prod up --build cache-redis db_test db app
 ```
+or with `make` command (must be installed make):
+
+```
+make run_docker
+```
+
 After which `docker сompose` will create three containers with a databases and a Python application and install all dependencies. You can access the API documentation by url address `http://localhost:8000/docs`
 
 
@@ -39,5 +45,9 @@ After which `docker сompose` will create three containers with a databases and 
 To pass testing you just need to run the test container using the following command (API and databases should be deployed with previous command):
 ```
 docker compose --env-file .env.prod up --build app_tests
+```
+or
+```
+make run_docker_tests
 ```
 After tests passed container finish to work automatically
