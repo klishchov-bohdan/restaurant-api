@@ -5,7 +5,11 @@ from app.constants import request_key_builder
 from app.dependencies import InvCacheDependency, UOWDependency
 from app.exceptions import DataNotFound
 from app.services.submenus.exeptions import SubmenuNotFoundError
-from app.services.submenus.schemas import CreateSubmenuSchema, OutSubmenuSchema
+from app.services.submenus.schemas import (
+    CreateSubmenuSchema,
+    OutModifiedSchema,
+    OutSubmenuSchema,
+)
 from app.services.submenus.service import SubmenuService
 
 router = APIRouter(
@@ -43,24 +47,24 @@ async def get_submenu(menu_id: int, submenu_id: int, uow: UOWDependency):
 
 
 @router.post('/{menu_id}/submenus/',
-             response_model=OutSubmenuSchema,
+             response_model=OutModifiedSchema,
              status_code=status.HTTP_201_CREATED,
              description='Creating and returning new Submenu',
              summary='Create Submenu')
 async def create_submenu(menu_id: int, submenu: CreateSubmenuSchema, uow: UOWDependency, ic: InvCacheDependency):
     created_submenu = await SubmenuService(uow=uow).create(menu_id=menu_id, submenu=submenu)
-    return OutSubmenuSchema.model_validate(created_submenu)
+    return OutModifiedSchema.model_validate(created_submenu)
 
 
 @router.patch('/{menu_id}/submenus/{submenu_id}',
-              response_model=OutSubmenuSchema,
+              response_model=OutModifiedSchema,
               status_code=status.HTTP_200_OK,
               description='Updating and returning the Submenu in menu by id',
               summary='Update Submenu')
 async def update_submenu(menu_id: int, submenu_id: int, submenu: CreateSubmenuSchema, uow: UOWDependency, ic: InvCacheDependency):
     try:
         updated_submenu = await SubmenuService(uow=uow).update(id=submenu_id, submenu=submenu)
-        return OutSubmenuSchema.model_validate(updated_submenu)
+        return OutModifiedSchema.model_validate(updated_submenu)
     except DataNotFound:
         raise SubmenuNotFoundError()
 

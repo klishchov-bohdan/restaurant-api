@@ -14,12 +14,17 @@ router = APIRouter(
 )
 
 
-# TODO
 @router.get('/{menu_id}/submenus/{submenu_id}/dishes/',
             response_model=list[OutDishSchema],
             status_code=status.HTTP_200_OK,
             description='Returning the list of the Dishes',
-            summary='Get all dishes')
+            summary='Get all dishes',
+            responses={
+                status.HTTP_200_OK: {
+                    'model': list[OutDishSchema],
+                    'description': 'Ok Response',
+                },
+            })
 @cache(namespace='dishes', key_builder=request_key_builder)
 async def get_all_dishes_in_submenu(menu_id: int, submenu_id: int, uow: UOWDependency):
     try:
@@ -33,7 +38,17 @@ async def get_all_dishes_in_submenu(menu_id: int, submenu_id: int, uow: UOWDepen
             response_model=OutDishSchema,
             status_code=status.HTTP_200_OK,
             description='Returning the Dish from Submenu by id',
-            summary='Get dish by id')
+            summary='Get dish by id',
+            responses={
+                status.HTTP_200_OK: {
+                    'model': list[OutDishSchema],
+                    'description': 'Ok Response',
+                },
+                status.HTTP_404_NOT_FOUND: {
+                    'model': dict[str, str],
+                    'description': 'dish id not exists',
+                },
+            })
 @cache(namespace='dishes', key_builder=request_key_builder)
 async def get_dish(menu_id: int, submenu_id: int, dish_id: int, uow: UOWDependency):
     try:
@@ -47,7 +62,13 @@ async def get_dish(menu_id: int, submenu_id: int, dish_id: int, uow: UOWDependen
              response_model=OutDishSchema,
              status_code=status.HTTP_201_CREATED,
              description='Create and return new Dish',
-             summary='Create new Dish')
+             summary='Create new Dish',
+             responses={
+                 status.HTTP_201_CREATED: {
+                     'model': list[OutDishSchema],
+                     'description': 'Ok Response',
+                 },
+             })
 async def create_dish(menu_id: int, submenu_id: int, dish: CreateDishSchema, uow: UOWDependency, ic: InvCacheDependency):
     created_dish = await DishService(uow=uow).create(submenu_id=submenu_id, dish=dish)
     return OutDishSchema.model_validate(created_dish)

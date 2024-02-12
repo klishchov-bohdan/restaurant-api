@@ -6,8 +6,7 @@ from fastapi import FastAPI
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from httpx import AsyncClient
-from redis import asyncio as aioredis
-from sqlalchemy import NullPool, text
+from sqlalchemy import NullPool, insert
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -19,6 +18,8 @@ from app.config import settings
 from app.database import metadata
 from app.dependencies import get_uow
 from app.main import app
+from app.models import Menu, Submenu
+from app.redis_conn import aioredis
 from app.utils.uow import UnitOfWork
 
 _SQLALCHEMY_DATABASE_URL_TEST: Final[
@@ -45,13 +46,15 @@ app.dependency_overrides[get_uow] = override_get_uow
 
 @pytest.fixture(autouse=True, scope='session')
 async def prepare_database():
-    redis = aioredis.from_url(f'redis://{settings.redis.server}:{settings.redis.port}')
-    FastAPICache.init(RedisBackend(redis), prefix='fastapi-cache')
+    FastAPICache.init(RedisBackend(aioredis), prefix='fastapi-cache')
     async with engine_test.begin() as conn:
-        await conn.run_sync(metadata.create_all)  # TODO: careate tables if they are not exists
-        await conn.execute(text("insert into menu (title, description) values ('title1', 'description1')"))
+        await conn.run_sync(metadata.create_all)
         await conn.execute(
-            text("insert into submenu (title, description, menu_id) values ('title1', 'description1', 1)"))
+            insert(Menu).values(title='title1', description='description1')
+        )
+        await conn.execute(
+            insert(Submenu).values(title='title1', description='description1', menu_id=1)
+        )
     yield
     async with engine_test.begin() as conn:
         await conn.run_sync(metadata.drop_all)
@@ -78,3 +81,8 @@ async def ac() -> AsyncGenerator[AsyncClient, None]:
 @pytest.fixture(scope='session')
 async def api() -> FastAPI:
     return app
+
+
+@pytest.fixture(scope='session')
+async def uow() -> UnitOfWork:
+    return UnitOfWork(session_maker=async_session_maker_test)

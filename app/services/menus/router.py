@@ -5,7 +5,11 @@ from app.constants import request_key_builder
 from app.dependencies import InvCacheDependency, UOWDependency
 from app.exceptions import DataNotFound
 from app.services.menus.exeptions import MenuNotFoundError
-from app.services.menus.schemas import CreateMenuSchema, OutMenuSchema
+from app.services.menus.schemas import (
+    CreateMenuSchema,
+    OutMenuSchema,
+    OutModifiedSchema,
+)
 from app.services.menus.service import MenuService
 
 router = APIRouter(
@@ -43,24 +47,24 @@ async def get_menu(menu_id: int, uow: UOWDependency):
 
 
 @router.post('/',
-             response_model=OutMenuSchema,
+             response_model=OutModifiedSchema,
              status_code=status.HTTP_201_CREATED,
              description='Create and return new Menu',
              summary='Create new Menu')
 async def create_menu(menu: CreateMenuSchema, uow: UOWDependency, ic: InvCacheDependency):
     created_menu = await MenuService(uow=uow).create(menu=menu)
-    return OutMenuSchema.model_validate(created_menu)
+    return OutModifiedSchema.model_validate(created_menu)
 
 
 @router.patch('/{menu_id}',
-              response_model=OutMenuSchema,
+              response_model=OutModifiedSchema,
               status_code=status.HTTP_200_OK,
               description='Update and return Menu',
               summary='Update Menu')
 async def update_menu(menu_id: int, menu: CreateMenuSchema, uow: UOWDependency, ic: InvCacheDependency):
     try:
         updated_menu = await MenuService(uow=uow).update(id=menu_id, menu=menu)
-        return OutMenuSchema.model_validate(updated_menu)
+        return OutModifiedSchema.model_validate(updated_menu)
     except DataNotFound:
         raise MenuNotFoundError()
 

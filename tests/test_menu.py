@@ -1,27 +1,27 @@
 from fastapi import FastAPI
 from httpx import AsyncClient
-from sqlalchemy import insert, select
+from sqlalchemy import select
 
 from app.models import Menu
+from app.utils.uow import UnitOfWork
 from tests.conftest import async_session_maker_test
 
 
 class TestMenu:
-    async def test_get_all_menus(self, ac: AsyncClient, api: FastAPI):
-        stmt = (
-            insert(Menu).values(title='title3', description='description3').returning(Menu.id)
-        )
-        async with async_session_maker_test() as db:
-            await db.execute(stmt)
-            await db.commit()
+    async def test_get_all_menus(self, ac: AsyncClient, api: FastAPI, uow: UnitOfWork):
+        async with uow:
+            await uow.menu_repo.add_one({
+                'title': 'title3',
+                'description': 'description3'
+            })
+            await uow.commit()
         req_url = api.url_path_for('get_all_menus')
         response = await ac.get(req_url, follow_redirects=True)
         assert response.status_code == 200, 'Can`t get all menus'
         assert response.text[0] == '[' and response.text[-1] == ']', 'Response json is not a list'
-        async with async_session_maker_test() as db:
-            stmt = select(Menu)
-            result = await db.execute(stmt)
-        menus = [menu[0] for menu in result.all()]
+        async with uow:
+            result = await uow.menu_repo.find_all()
+        menus = [menu for menu in result]
         for idx, menu in enumerate(menus):
             assert str(menu.id) == response.json()[idx]['id'], 'Menu id is not equal'
             assert menu.title == response.json()[idx]['title'], 'Menu title is not equal'
@@ -49,14 +49,13 @@ class TestMenu:
         assert menu.title == response.json()['title'], 'Menu title is not equal'
         assert menu.description == response.json()['description'], 'Menu description is not equal'
 
-    async def test_get_menu(self, ac: AsyncClient, api: FastAPI):
-        stmt = (
-            insert(Menu).values(title='title1', description='description1').returning(Menu)
-        )
-        async with async_session_maker_test() as db:
-            result = await db.execute(stmt)
-            menu = result.fetchone()[0]
-            await db.commit()
+    async def test_get_menu(self, ac: AsyncClient, api: FastAPI, uow: UnitOfWork):
+        async with uow:
+            menu = await uow.menu_repo.add_one({
+                'title': 'title3',
+                'description': 'description3'
+            })
+            await uow.commit()
         req_url = api.url_path_for('get_menu', menu_id=menu.id)
         response = await ac.get(req_url, follow_redirects=True)
         assert response.status_code == 200, 'Can`t get menu by id'
@@ -88,20 +87,19 @@ class TestMenu:
         assert menu.title == response.json()['title'], 'Menu title is not equal'
         assert menu.description == response.json()['description'], 'Menu description is not equal'
 
-    async def test_delete(self, ac: AsyncClient, api: FastAPI):
-        stmt = (
-            insert(Menu).values(title='title1', description='description1').returning(Menu.id)
-        )
-        async with async_session_maker_test() as db:
-            result = await db.execute(stmt)
-            menu_id = result.fetchone()[0]
-            await db.commit()
-        req_url = api.url_path_for('delete_menu', menu_id=menu_id)
+    async def test_delete(self, ac: AsyncClient, api: FastAPI, uow: UnitOfWork):
+        async with uow:
+            menu = await uow.menu_repo.add_one({
+                'title': 'title3',
+                'description': 'description3'
+            })
+            await uow.commit()
+        req_url = api.url_path_for('delete_menu', menu_id=menu.id)
         response = await ac.delete(req_url, follow_redirects=True)
         assert response.status_code == 200, 'Can`t delete menu by id'
         assert not response.json(), 'Invalid response'
         query = (
-            select(Menu).where(Menu.id == menu_id)
+            select(Menu).where(Menu.id == menu.id)
         )
         async with async_session_maker_test() as db:
             result = await db.execute(query)

@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from httpx import AsyncClient
-from sqlalchemy import insert, select
+from sqlalchemy import select
 
 from app.models import Submenu
+from app.utils.uow import UnitOfWork
 from tests.conftest import async_session_maker_test
 
 
@@ -15,7 +16,7 @@ class TestSubmenu:
         async with async_session_maker_test() as db:
             stmt = select(Submenu)
             result = await db.execute(stmt)
-        submenus = [submenu[0] for submenu in result.all()]
+        submenus = [submenu[0] for submenu in result.unique().all()]
         for idx, submenu in enumerate(submenus):
             assert str(submenu.id) == response.json()[idx]['id'], 'Submenu id is not equal'
             assert submenu.title == response.json()[idx]['title'], 'Submenu title is not equal'
@@ -44,14 +45,14 @@ class TestSubmenu:
         assert submenu.title == response.json()['title'], 'Submenu title is not equal'
         assert submenu.description == response.json()['description'], 'Submenu description is not equal'
 
-    async def test_get_submenu(self, ac: AsyncClient, api: FastAPI):
-        stmt = (
-            insert(Submenu).values(title='title1', description='description1', menu_id=1).returning(Submenu)
-        )
-        async with async_session_maker_test() as db:
-            result = await db.execute(stmt)
-            submenu = result.fetchone()[0]
-            await db.commit()
+    async def test_get_submenu(self, ac: AsyncClient, api: FastAPI, uow: UnitOfWork):
+        async with uow:
+            submenu = await uow.submenu_repo.add_one({
+                'title': 'title1',
+                'description': 'description1',
+                'menu_id': 1
+            })
+            await uow.commit()
         req_url = api.url_path_for('get_submenu', menu_id=1, submenu_id=submenu.id)
         response = await ac.get(req_url, follow_redirects=True)
         assert response.status_code == 200, 'Can`t get submenu by id'
@@ -84,20 +85,20 @@ class TestSubmenu:
         assert submenu.title == response.json()['title'], 'Submenu title is not equal'
         assert submenu.description == response.json()['description'], 'Submenu description is not equal'
 
-    async def test_delete(self, ac: AsyncClient, api: FastAPI):
-        stmt = (
-            insert(Submenu).values(title='title1', description='description1', menu_id=1).returning(Submenu.id)
-        )
-        async with async_session_maker_test() as db:
-            result = await db.execute(stmt)
-            submenu_id = result.fetchone()[0]
-            await db.commit()
-        req_url = api.url_path_for('delete_submenu', menu_id=1, submenu_id=submenu_id)
+    async def test_delete(self, ac: AsyncClient, api: FastAPI, uow: UnitOfWork):
+        async with uow:
+            submenu = await uow.submenu_repo.add_one({
+                'title': 'title1',
+                'description': 'description1',
+                'menu_id': 1
+            })
+            await uow.commit()
+        req_url = api.url_path_for('delete_submenu', menu_id=1, submenu_id=submenu.id)
         response = await ac.delete(req_url, follow_redirects=True)
         assert response.status_code == 200, 'Can`t delete submenu by id'
         assert not response.json(), 'Invalid response'
         query = (
-            select(Submenu).where(Submenu.id == submenu_id)
+            select(Submenu).where(Submenu.id == submenu.id)
         )
         async with async_session_maker_test() as db:
             result = await db.execute(query)

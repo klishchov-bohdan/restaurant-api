@@ -16,3 +16,7 @@ fastapi-cache2==0.2.1
 aiocache==0.12.2
 starlette==0.35.1
 types-redis==4.6.0.20240106
+celery==5.3.4
+flower==2.0.0
+
+gspread==6.0.1

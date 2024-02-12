@@ -5,6 +5,7 @@ from httpx import AsyncClient
 from sqlalchemy import insert, select
 
 from app.models import Dish
+from app.utils.uow import UnitOfWork
 from tests.conftest import async_session_maker_test
 
 
@@ -58,14 +59,15 @@ class TestDish:
         assert dish.description == response.json()['description'], 'Dish description is not equal'
         assert str(dish.price) == response.json()['price'], 'Dish title is not equal'
 
-    async def test_get_dish(self, ac: AsyncClient, api: FastAPI):
-        stmt = (
-            insert(Dish).values(title='title1', description='description1', price='12.63', submenu_id=1).returning(Dish)
-        )
-        async with async_session_maker_test() as db:
-            result = await db.execute(stmt)
-            dish = result.fetchone()[0]
-            await db.commit()
+    async def test_get_dish(self, ac: AsyncClient, api: FastAPI, uow: UnitOfWork):
+        async with uow:
+            dish = await uow.dish_repo.add_one({
+                'title': 'title1',
+                'description': 'description1',
+                'price': '12.63',
+                'submenu_id': 1
+            })
+            await uow.commit()
         req_url = api.url_path_for('get_dish', menu_id=1, submenu_id=1, dish_id=dish.id)
         response = await ac.get(req_url, follow_redirects=True)
         assert response.status_code == 200, 'Can`t get dish by id'
@@ -88,14 +90,15 @@ class TestDish:
         assert dish.description == response.json()['description'], 'Dish description is not equal'
         assert str(dish.price) == response.json()['price'], 'Dish title is not equal'
 
-    async def test_update(self, ac: AsyncClient, api: FastAPI):
-        stmt = (
-            insert(Dish).values(title='title1', description='description1', price='12.53', submenu_id=1).returning(Dish)
-        )
-        async with async_session_maker_test() as db:
-            result = await db.execute(stmt)
-            dish = result.fetchone()[0]
-            await db.commit()
+    async def test_update(self, ac: AsyncClient, api: FastAPI, uow: UnitOfWork):
+        async with uow:
+            dish = await uow.dish_repo.add_one({
+                'title': 'title1',
+                'description': 'description1',
+                'price': '12.63',
+                'submenu_id': 1
+            })
+            await uow.commit()
         req_url = api.url_path_for('update_dish', menu_id=1, submenu_id=1, dish_id=dish.id)
         response = await ac.patch(req_url, follow_redirects=True,
                                   json={
@@ -122,21 +125,21 @@ class TestDish:
         assert dish.description == response.json()['description'], 'Dish description is not equal'
         assert str(dish.price) == response.json()['price'], 'Dish title is not equal'
 
-    async def test_delete(self, ac: AsyncClient, api: FastAPI):
-        stmt = (
-            insert(Dish).values(title='title1', description='description1',
-                                price='43.12', submenu_id=1).returning(Dish.id)
-        )
-        async with async_session_maker_test() as db:
-            result = await db.execute(stmt)
-            dish_id = result.fetchone()[0]
-            await db.commit()
-        req_url = api.url_path_for('delete_dish', menu_id=1, submenu_id=1, dish_id=dish_id)
+    async def test_delete(self, ac: AsyncClient, api: FastAPI, uow: UnitOfWork):
+        async with uow:
+            dish = await uow.dish_repo.add_one({
+                'title': 'title1',
+                'description': 'description1',
+                'price': '12.63',
+                'submenu_id': 1
+            })
+            await uow.commit()
+        req_url = api.url_path_for('delete_dish', menu_id=1, submenu_id=1, dish_id=dish.id)
         response = await ac.delete(req_url, follow_redirects=True)
         assert response.status_code == 200, 'Can`t delete dish by id'
         assert not response.json(), 'Invalid response'
         query = (
-            select(Dish).where(Dish.id == dish_id)
+            select(Dish).where(Dish.id == dish.id)
         )
         async with async_session_maker_test() as db:
             result = await db.execute(query)
