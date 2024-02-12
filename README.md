@@ -1,6 +1,7 @@
 # Restaurant API
 _________________
 ## Info
+
 The excel file for data extraction is located at the [link](https://docs.google.com/spreadsheets/d/1g73VTQrxzM5YCn2kw4Cc4BrjJ_vQ_qCgErDgSMJAg_8). The file is open to everyone for editing.
 
 ## How to run
