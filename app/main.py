@@ -5,7 +5,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.redis_conn import aioredis
-from app.services import dish_router, menu_router, submenu_router
+from app.src import dish_router, menu_router, submenu_router
 
 app = FastAPI(title='restaurant-api')
 

@@ -1,5 +1,5 @@
 from app.schemas import MenuSchema
-from app.services.menus.schemas import CreateMenuSchema
+from app.src.menus.schemas import CreateMenuSchema
 from app.utils.uow import IUnitOfWork
 
 

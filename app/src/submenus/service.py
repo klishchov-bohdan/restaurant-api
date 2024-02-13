@@ -1,5 +1,5 @@
 from app.schemas import SubmenuSchema
-from app.services.submenus.schemas import CreateSubmenuSchema
+from app.src.submenus.schemas import CreateSubmenuSchema
 from app.utils.uow import IUnitOfWork
 
 

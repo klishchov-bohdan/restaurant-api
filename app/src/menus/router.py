@@ -4,13 +4,9 @@ from fastapi_cache.decorator import cache
 from app.constants import request_key_builder
 from app.dependencies import InvCacheDependency, UOWDependency
 from app.exceptions import DataNotFound
-from app.services.menus.exeptions import MenuNotFoundError
-from app.services.menus.schemas import (
-    CreateMenuSchema,
-    OutMenuSchema,
-    OutModifiedSchema,
-)
-from app.services.menus.service import MenuService
+from app.src.menus.exeptions import MenuNotFoundError
+from app.src.menus.schemas import CreateMenuSchema, OutMenuSchema, OutModifiedSchema
+from app.src.menus.service import MenuService
 
 router = APIRouter(
     prefix='/menus',

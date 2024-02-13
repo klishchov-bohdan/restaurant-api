@@ -4,13 +4,13 @@ from fastapi_cache.decorator import cache
 from app.constants import request_key_builder
 from app.dependencies import InvCacheDependency, UOWDependency
 from app.exceptions import DataNotFound
-from app.services.submenus.exeptions import SubmenuNotFoundError
-from app.services.submenus.schemas import (
+from app.src.submenus.exeptions import SubmenuNotFoundError
+from app.src.submenus.schemas import (
     CreateSubmenuSchema,
     OutModifiedSchema,
     OutSubmenuSchema,
 )
-from app.services.submenus.service import SubmenuService
+from app.src.submenus.service import SubmenuService
 
 router = APIRouter(
     prefix='/menus',

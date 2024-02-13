@@ -1,5 +1,5 @@
 from app.schemas import DishSchema
-from app.services.dishes.schemas import CreateDishSchema
+from app.src.dishes.schemas import CreateDishSchema
 from app.utils.uow import IUnitOfWork
 
 

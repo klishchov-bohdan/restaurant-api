@@ -4,9 +4,9 @@ from fastapi_cache.decorator import cache
 from app.constants import request_key_builder
 from app.dependencies import InvCacheDependency, UOWDependency
 from app.exceptions import DataNotFound
-from app.services.dishes.exeptions import DishNotFoundError
-from app.services.dishes.schemas import CreateDishSchema, OutDishSchema
-from app.services.dishes.service import DishService
+from app.src.dishes.exeptions import DishNotFoundError
+from app.src.dishes.schemas import CreateDishSchema, OutDishSchema
+from app.src.dishes.service import DishService
 
 router = APIRouter(
     prefix='/menus',
