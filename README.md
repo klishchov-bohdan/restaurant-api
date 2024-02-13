@@ -63,7 +63,7 @@ You can access to RabbitMQ by url `http://localhost:15672`
 Task  | Location
 ------------- | -------------
 Обновление меню из google sheets раз в 15 сек. | [File](https://github.com/klishchov-bohdan/restaurant-api/blob/master/app/background/tasks.py)
-Блюда по акции. Размер скидки (%) указывается в столбце G файла Menu.xlsx |  [File](https://github.com/klishchov-bohdan/restaurant-api/blob/master/app/src/dishes/schemas.py)
+Блюда по акции. Размер скидки (%) указывается в столбце G файла Menu.xlsx |  [File](https://github.com/klishchov-bohdan/restaurant-api/blob/master/app/schemas.py)
 
 Cache invalidation loads in background task in this [file](https://github.com/klishchov-bohdan/restaurant-api/blob/master/app/dependencies.py)
 ## Tests
